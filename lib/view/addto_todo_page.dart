@@ -1,13 +1,39 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:todo_golang/model/todo_model.dart';
 import 'package:todo_golang/provider/todo_provider.dart';
 
-class Addtodoscreen extends StatelessWidget {
-  Addtodoscreen({super.key});
+class Addtodoscreen extends StatefulWidget {
+  final Todomodel? todo;
+  const Addtodoscreen({super.key, required this.todo});
+
+  @override
+  State<Addtodoscreen> createState() => _AddtodoscreenState();
+}
+
+class _AddtodoscreenState extends State<Addtodoscreen> {
   final TextEditingController titleController = TextEditingController();
+
   final TextEditingController dateController = TextEditingController();
+
   final TextEditingController contentController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (widget.todo != null) {
+        titleController.text = widget.todo!.title;
+        dateController.text = widget.todo!.enddate;
+        contentController.text = widget.todo!.content;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,7 +152,7 @@ class Addtodoscreen extends StatelessWidget {
     );
   }
 
-  void add(BuildContext context) {
+  void add(BuildContext context) async {
     if (titleController.text.isEmpty ||
         dateController.text.isEmpty ||
         contentController.text.isEmpty) {
@@ -137,26 +163,84 @@ class Addtodoscreen extends StatelessWidget {
         ),
       );
     } else {
-      context.read<TodoProvider>().addTodo(
-        title: titleController.text,
-        content: contentController.text,
-        endDate: dateController.text,
-      );
-
-      titleController.clear();
-      contentController.clear();
-      dateController.clear();
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.green,
-          content: Text(
-            'Todo added',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-      );
+      if (widget.todo != null) {
+        final response = await context.read<TodoProvider>().editTodo(
+          id: widget.todo!.id.toString(),
+          title: titleController.text,
+          content: contentController.text,
+          endDate: dateController.text,
+        );
+        log(response);
+        if (response == 'todo updated successfully') {
+          titleController.clear();
+          contentController.clear();
+          dateController.clear();
+          if (context.mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: Colors.green,
+                content: Text(
+                  'Todo updated',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            );
+          }
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: Colors.red,
+                content: Text(
+                  'Unable to edit todo',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            );
+          }
+        }
+      } else {
+        final response = await context.read<TodoProvider>().addTodo(
+          title: titleController.text,
+          content: contentController.text,
+          endDate: dateController.text,
+        );
+        log(response);
+        if (response == 'todo added successfully') {
+          titleController.clear();
+          contentController.clear();
+          dateController.clear();
+          if (context.mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: Colors.green,
+                content: Text(
+                  'Todo added',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            );
+          }
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: Colors.red,
+                content: Text(
+                  'Unable to add todo',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            );
+          }
+        }
+      }
     }
   }
 }

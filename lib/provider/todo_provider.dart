@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
@@ -15,6 +16,7 @@ class TodoProvider extends ChangeNotifier {
 
   Future<void> fetchTodo() async {
     try {
+      todos.clear();
       startLoading();
       final response = await itodoRepo.fetchTodo();
       final data = jsonDecode(response);
@@ -41,23 +43,36 @@ class TodoProvider extends ChangeNotifier {
         content: content,
         endDate: endDate,
       );
-      return response;
+      log('RAW RESPONSE: $response');
+      final data = await json.decode(response);
+      if (data['message'] == 'todo added successfully') {
+        await fetchTodo();
+        notifyListeners();
+      }
+      log(data['message']);
+      return data['message'];
     } catch (err) {
       debugPrint('Errow while adding todo $err');
-      return 'Errow while adding todo $err';
+      return 'error';
     } finally {
       stopLoading();
     }
   }
 
-  Future<String> deleteTodo({required String id}) async {
+  Future<String> deleteTodo({required Todomodel todo}) async {
     try {
       startLoading();
-      final response = await itodoRepo.removeTodo(id: id);
-      return response;
+      final response = await itodoRepo.removeTodo(id: todo.id.toString());
+      final data = json.decode(response);
+      if (data['message'] == 'todo deleted successfully') {
+        todos.remove(todo);
+        notifyListeners();
+      }
+      log(data['message']);
+      return data['message'];
     } catch (err) {
       debugPrint('Errow while removeing todo $err');
-      return 'Errow while removeing todo $err';
+      return 'error';
     } finally {
       stopLoading();
     }
@@ -77,10 +92,24 @@ class TodoProvider extends ChangeNotifier {
         content: content,
         endDate: endDate,
       );
-      return response;
+      final data = json.decode(response);
+      if (data['message'] == 'todo updated successfully') {
+        todos.removeWhere((e) => e.id == int.parse(id));
+        todos.add(
+          Todomodel(
+            id: int.parse(id),
+            title: title,
+            content: content,
+            enddate: endDate,
+          ),
+        );
+        notifyListeners();
+      }
+      log(data['message']);
+      return data['message'];
     } catch (err) {
       debugPrint('Errow while editing todo $err');
-      return 'Errow while editing todo $err';
+      return 'error';
     } finally {
       stopLoading();
     }

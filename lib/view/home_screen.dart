@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_golang/provider/todo_provider.dart';
@@ -118,11 +120,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          Addtodoscreen(todo: todo),
+                                    ),
+                                  );
+                                },
                                 child: Icon(Icons.edit, color: Colors.white),
                               ),
                               GestureDetector(
                                 onTap: () =>
-                                    value.deleteTodo(id: todo.id.toString()),
+                                    _showDeleteDialog(context, value, todo),
                                 child: Icon(Icons.delete, color: Colors.white),
                               ),
                             ],
@@ -141,12 +152,10 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.black,
         onPressed: () async {
           // Await navigation, then refresh when returning from AddTodo
-          await Navigator.push(
+          Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => Addtodoscreen()),
+            MaterialPageRoute(builder: (context) => Addtodoscreen(todo: null)),
           );
-          // Re-fetch after adding so list is always live
-          if (mounted) context.read<TodoProvider>().fetchTodo();
         },
         child: const Icon(Icons.add),
       ),
@@ -165,9 +174,22 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                await value.deleteTodo(id: todo.id.toString());
-                // Re-fetch after delete to sync with server
-                if (context.mounted) context.read<TodoProvider>().fetchTodo();
+                final response = await value.deleteTodo(todo: todo);
+                log(response);
+                if (response == 'todo deleted successfully') {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: Colors.green,
+                        content: Text(
+                          'Todo delted',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    );
+                  }
+                }
               },
               child: const Text('Yes'),
             ),
