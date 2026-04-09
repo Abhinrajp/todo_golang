@@ -124,13 +124,16 @@ class TodoProvider extends ChangeNotifier {
       } else {
         searchlist.addAll(
           todos.where(
-            (todo) => todo.enddate.toLowerCase().contains(query.toLowerCase()),
+            (todo) =>
+                todo.title.toLowerCase().contains(query.toLowerCase()) ||
+                todo.content.toLowerCase().contains(query.toLowerCase()) ||
+                todo.enddate.toLowerCase().contains(query.toLowerCase()),
           ),
         );
       }
       notifyListeners();
     } catch (err) {
-      debugPrint('Errow while serching todo $err');
+      debugPrint('Error while searching todo $err');
     } finally {
       stopLoading();
     }
