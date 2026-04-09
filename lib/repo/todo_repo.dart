@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:http/http.dart' as http;
 
@@ -20,7 +21,12 @@ abstract class ItodoRepo {
 
 @LazySingleton(as: ItodoRepo)
 class TodoRepo implements ItodoRepo {
-  String get apiUrl => 'http://10.0.2.2:8080/todos';
+  String get apiUrl {
+    if (kIsWeb) return 'http://localhost:8080/todos';
+    return 'http://10.0.2.2:8080/todos';
+  }
+
+  // String get apiUrl => 'http://10.0.2.2:8080/todos';
   @override
   Future<String> addingTodo({
     required String title,
